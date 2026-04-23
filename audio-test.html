@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Test - Study Garden</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f0f4f0;
+    }
+    .test-box {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2e7d32;
+      margin-top: 0;
+    }
+    button {
+      background: #4a7c59;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #2e7d32;
+    }
+    button.stop {
+      background: #d32f2f;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+    .info {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #2e7d32;
+    }
+    .warning {
+      background: #fff3e0;
+      color: #e65100;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎵 Audio Test - Study Garden</h1>
+  
+  <div class="test-box">
+    <h2>Test Background Music</h2>
+    <p>Click các nút để test nhạc nền:</p>
+    
+    <button onclick="playMusic('lofi')">🎵 Lo-fi Beats</button>
+    <button onclick="playMusic('rain')">🌊 Rain Sounds</button>
+    <button onclick="playMusic('cafe')">🔔 Cafe Ambience</button>
+    <button onclick="playMusic('piano')">🎹 Classical Piano</button>
+    <button class="stop" onclick="stopMusic()">⏹️ Stop</button>
+    
+    <div style="margin-top: 15px;">
+      <label>Volume: <span id="vol-display">50%</span></label>
+      <input type="range" id="volume" min="0" max="100" value="50" oninput="changeVolume(this.value)">
+    </div>
+    
+    <div class="info">
+      <strong>Status:</strong> <span id="status">Chưa phát nhạc</span>
+    </div>
+  </div>
+  
+  <div class="test-box">
+    <h2>Test Timer End Sound</h2>
+    <p>Click để test âm thanh kết thúc timer:</p>
+    
+    <button onclick="playTimerEnd()">⏰ Play Timer End Sound</button>
+    
+    <div class="info">
+      Âm thanh này sẽ phát khi countdown timer kết thúc
+    </div>
+  </div>
+  
+  <div class="test-box warning">
+    <h2>⚠️ Lưu ý</h2>
+    <ul style="margin: 10px 0; padding-left: 20px;">
+      <li>File demo này sử dụng audio từ internet (có thể chậm)</li>
+      <li>Để sử dụng trong app thật, tải file MP3 về thư mục <code>audio/</code></li>
+      <li>Xem hướng dẫn trong <code>audio/README.md</code></li>
+      <li>Một số trình duyệt chặn autoplay, cần click trước</li>
+    </ul>
+  </div>
+  
+  <div class="test-box">
+    <h2>📥 Download Audio Files</h2>
+    <p>Nguồn miễn phí để tải nhạc:</p>
+    <ul style="line-height: 1.8;">
+      <li><a href="https://studio.youtube.com/" target="_blank">YouTube Audio Library</a> - Miễn phí, không cần ghi nguồn</li>
+      <li><a href="https://pixabay.com/music/" target="_blank">Pixabay Music</a> - Miễn phí cho thương mại</li>
+      <li><a href="https://freesound.org/" target="_blank">Freesound</a> - Sound effects miễn phí</li>
+      <li><a href="https://mixkit.co/free-sound-effects/" target="_blank">Mixkit</a> - Free sound effects</li>
+    </ul>
+  </div>
+
+  <audio id="audio-player" loop></audio>
+  <audio id="timer-sound"></audio>
+
+  <script>
+    const audioPlayer = document.getElementById('audio-player');
+    const timerSound = document.getElementById('timer-sound');
+    const statusEl = document.getElementById('status');
+    
+    // Demo URLs - replace with your own files
+    const musicUrls = {
+      'lofi': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      'rain': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      'cafe': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      'piano': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
+    };
+    
+    const timerEndUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3';
+    
+    function playMusic(type) {
+      audioPlayer.src = musicUrls[type];
+      audioPlayer.volume = document.getElementById('volume').value / 100;
+      
+      audioPlayer.play()
+        .then(() => {
+          const names = {
+            'lofi': 'Lo-fi Beats',
+            'rain': 'Rain Sounds',
+            'cafe': 'Cafe Ambience',
+            'piano': 'Classical Piano'
+          };
+          statusEl.textContent = `Đang phát: ${names[type]}`;
+          statusEl.style.color = '#2e7d32';
+        })
+        .catch(err => {
+          statusEl.textContent = `Lỗi: ${err.message}`;
+          statusEl.style.color = '#d32f2f';
+        });
+    }
+    
+    function stopMusic() {
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+      statusEl.textContent = 'Đã dừng';
+      statusEl.style.color = '#666';
+    }
+    
+    function changeVolume(value) {
+      audioPlayer.volume = value / 100;
+      document.getElementById('vol-display').textContent = value + '%';
+    }
+    
+    function playTimerEnd() {
+      timerSound.src = timerEndUrl;
+      timerSound.volume = document.getElementById('volume').value / 100;
+      timerSound.play()
+        .then(() => {
+          alert('✅ Timer end sound played!');
+        })
+        .catch(err => {
+          alert('❌ Error: ' + err.message);
+        });
+    }
+    
+    // Enable audio on first click
+    document.addEventListener('click', () => {
+      audioPlayer.load();
+      timerSound.load();
+    }, { once: true });
+  </script>
+</body>
+</html>
