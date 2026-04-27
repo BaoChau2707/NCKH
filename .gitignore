@@ -1,0 +1,37 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependencies (if you add npm later)
+node_modules/
+
+# Build files (if you add build process)
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# Firebase config (contains API keys)
+firebase-config.js
+
+# Audio files (optional - uncomment if files are too large)
+# audio/*.mp3
+# audio/*.wav
+
+# Temporary files
+*.tmp
+*.temp

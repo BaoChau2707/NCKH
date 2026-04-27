@@ -16,20 +16,21 @@ class App {
     // Load saved data
     this.loadAppState();
     
+    // Initialize auth system FIRST
+    initAuth();
+    
     // Initialize all modules
     initTimer();
     initQuiz();
     initMissions();
     initShop();
+    initGroupStudy();
     
     // Setup navigation
     this.setupNavigation();
     
     // Setup music controls
     this.setupMusicControls();
-    
-    // Setup group controls
-    this.setupGroupControls();
     
     // Update displays
     updateLeavesDisplay(this.leaves);
@@ -215,39 +216,16 @@ class App {
   }
   
   setupGroupControls() {
-    // Mic button
-    const micBtn = document.getElementById('mic-btn');
-    micBtn.addEventListener('click', () => {
-      this.micOn = !this.micOn;
-      micBtn.classList.toggle('on', this.micOn);
-      micBtn.textContent = this.micOn ? '🎤 Mic ON' : '🎤 Mic';
-    });
-    
-    // Camera button
-    const camBtn = document.getElementById('cam-btn');
-    camBtn.addEventListener('click', () => {
-      this.camOn = !this.camOn;
-      camBtn.classList.toggle('on', this.camOn);
-      camBtn.textContent = this.camOn ? '📷 Cam ON' : '📷 Camera';
-    });
-    
-    // Invite button
+    // Group controls are now handled by GroupStudyManager
+    // Keep invite button handler for backward compatibility
     const inviteBtn = document.getElementById('invite-btn');
-    inviteBtn.addEventListener('click', () => {
-      // Copy invite link to clipboard
-      const inviteLink = 'https://studygarden.app/invite/abc123';
-      
-      // Try to copy to clipboard
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(inviteLink).then(() => {
-          showToast('✅ Đã sao chép link mời!');
-        }).catch(() => {
-          showToast('📋 Link mời: ' + inviteLink);
-        });
-      } else {
-        showToast('📋 Link mời: ' + inviteLink);
-      }
-    });
+    if (inviteBtn) {
+      inviteBtn.addEventListener('click', () => {
+        if (window.groupStudyManager) {
+          window.groupStudyManager.inviteMember();
+        }
+      });
+    }
   }
   
   addLeaves(amount) {

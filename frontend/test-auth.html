@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Auth System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2e7d32;
+      margin-top: 0;
+    }
+    button {
+      background: #4a7c59;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #2e7d32;
+    }
+    .info {
+      background: #e8f5e9;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 5px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🔐 Test Auth System</h1>
+
+<div class="test-section">
+  <h2>1. Test LocalStorage</h2>
+  <button onclick="testLocalStorage()">Test LocalStorage</button>
+  <div id="localStorage-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>2. Test Auth Manager</h2>
+  <button onclick="testAuthManager()">Load Auth Manager</button>
+  <button onclick="showLoginDialog()">Show Login Dialog</button>
+  <div id="auth-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>3. Test Register</h2>
+  <input type="text" id="reg-name" placeholder="Tên">
+  <input type="email" id="reg-email" placeholder="Email">
+  <input type="password" id="reg-password" placeholder="Mật khẩu">
+  <button onclick="testRegister()">Register</button>
+  <div id="register-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>4. Test Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Mật khẩu">
+  <button onclick="testLogin()">Login</button>
+  <div id="login-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>5. Test Current User</h2>
+  <button onclick="testCurrentUser()">Get Current User</button>
+  <button onclick="testLogout()">Logout</button>
+  <div id="user-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>6. Test File Upload</h2>
+  <button onclick="testFileUpload()">Add Test File</button>
+  <button onclick="testGetFiles()">Get Uploaded Files</button>
+  <div id="file-result"></div>
+</div>
+
+<div class="test-section">
+  <h2>7. View All Data</h2>
+  <button onclick="viewAllData()">View All LocalStorage Data</button>
+  <button onclick="clearAllData()">Clear All Data</button>
+  <div id="data-result"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2e7d32;color:white;padding:10px 20px;border-radius:20px;display:none;z-index:999;"></div>
+
+<!-- Load dependencies -->
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+// Test functions
+
+function testLocalStorage() {
+  const result = document.getElementById('localStorage-result');
+  try {
+    localStorage.setItem('test', 'Hello World');
+    const value = localStorage.getItem('test');
+    localStorage.removeItem('test');
+    
+    result.innerHTML = `<div class="success">✅ LocalStorage hoạt động! Test value: "${value}"</div>`;
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ LocalStorage lỗi: ${e.message}</div>`;
+  }
+}
+
+function testAuthManager() {
+  const result = document.getElementById('auth-result');
+  try {
+    if (typeof initAuth === 'function') {
+      initAuth();
+      result.innerHTML = `<div class="success">✅ Auth Manager loaded!<br>authManager: ${typeof authManager}<br>isLoggedIn: ${authManager.isLoggedIn}</div>`;
+    } else {
+      result.innerHTML = `<div class="error">❌ initAuth function not found!</div>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function showLoginDialog() {
+  if (authManager) {
+    authManager.showLoginDialog();
+  } else {
+    alert('Please load Auth Manager first!');
+  }
+}
+
+function testRegister() {
+  const result = document.getElementById('register-result');
+  const name = document.getElementById('reg-name').value;
+  const email = document.getElementById('reg-email').value;
+  const password = document.getElementById('reg-password').value;
+  
+  if (!name || !email || !password) {
+    result.innerHTML = `<div class="error">❌ Vui lòng điền đầy đủ thông tin!</div>`;
+    return;
+  }
+  
+  try {
+    // Simulate register
+    const users = loadData('users', {});
+    
+    if (users[email]) {
+      result.innerHTML = `<div class="error">❌ Email đã tồn tại!</div>`;
+      return;
+    }
+    
+    const newUser = {
+      name: name,
+      email: email,
+      password: hashPassword(password),
+      createdAt: new Date().toISOString(),
+      leaves: 0,
+      uploadedFiles: []
+    };
+    
+    users[email] = newUser;
+    saveData('users', users);
+    
+    result.innerHTML = `<div class="success">✅ Đăng ký thành công!<br><pre>${JSON.stringify(newUser, null, 2)}</pre></div>`;
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function testLogin() {
+  const result = document.getElementById('login-result');
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  
+  if (!email || !password) {
+    result.innerHTML = `<div class="error">❌ Vui lòng điền email và mật khẩu!</div>`;
+    return;
+  }
+  
+  try {
+    const users = loadData('users', {});
+    const user = users[email];
+    
+    if (!user) {
+      result.innerHTML = `<div class="error">❌ Email không tồn tại!</div>`;
+      return;
+    }
+    
+    if (user.password !== hashPassword(password)) {
+      result.innerHTML = `<div class="error">❌ Mật khẩu sai!</div>`;
+      return;
+    }
+    
+    // Login successful
+    const currentUser = {
+      name: user.name,
+      email: user.email,
+      leaves: user.leaves || 0,
+      uploadedFiles: user.uploadedFiles || []
+    };
+    
+    saveData('currentUser', currentUser);
+    
+    result.innerHTML = `<div class="success">✅ Đăng nhập thành công!<br><pre>${JSON.stringify(currentUser, null, 2)}</pre></div>`;
+    
+    // Reload auth manager
+    if (authManager) {
+      authManager.loadUserSession();
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function testCurrentUser() {
+  const result = document.getElementById('user-result');
+  try {
+    const currentUser = loadData('currentUser', null);
+    
+    if (currentUser) {
+      result.innerHTML = `<div class="success">✅ Current User:<br><pre>${JSON.stringify(currentUser, null, 2)}</pre></div>`;
+    } else {
+      result.innerHTML = `<div class="info">ℹ️ Chưa đăng nhập</div>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function testLogout() {
+  const result = document.getElementById('user-result');
+  try {
+    saveData('currentUser', null);
+    result.innerHTML = `<div class="success">✅ Đã đăng xuất!</div>`;
+    
+    if (authManager) {
+      authManager.currentUser = null;
+      authManager.isLoggedIn = false;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function testFileUpload() {
+  const result = document.getElementById('file-result');
+  try {
+    if (!authManager || !authManager.isLoggedIn) {
+      result.innerHTML = `<div class="error">❌ Vui lòng đăng nhập trước!</div>`;
+      return;
+    }
+    
+    const testFile = {
+      name: 'test-document.txt',
+      content: 'This is a test document content...',
+      uploadedAt: new Date().toISOString(),
+      questionCount: 10
+    };
+    
+    const success = authManager.addUploadedFile(testFile);
+    
+    if (success) {
+      result.innerHTML = `<div class="success">✅ File added!<br><pre>${JSON.stringify(testFile, null, 2)}</pre></div>`;
+    } else {
+      result.innerHTML = `<div class="error">❌ Failed to add file!</div>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function testGetFiles() {
+  const result = document.getElementById('file-result');
+  try {
+    if (!authManager || !authManager.isLoggedIn) {
+      result.innerHTML = `<div class="error">❌ Vui lòng đăng nhập trước!</div>`;
+      return;
+    }
+    
+    const files = authManager.getUploadedFiles();
+    
+    if (files.length > 0) {
+      result.innerHTML = `<div class="success">✅ Uploaded Files (${files.length}):<br><pre>${JSON.stringify(files, null, 2)}</pre></div>`;
+    } else {
+      result.innerHTML = `<div class="info">ℹ️ Chưa có file nào</div>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function viewAllData() {
+  const result = document.getElementById('data-result');
+  try {
+    const allData = {};
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const value = localStorage.getItem(key);
+      try {
+        allData[key] = JSON.parse(value);
+      } catch {
+        allData[key] = value;
+      }
+    }
+    
+    result.innerHTML = `<div class="info">📦 All LocalStorage Data:<br><pre>${JSON.stringify(allData, null, 2)}</pre></div>`;
+  } catch (e) {
+    result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+  }
+}
+
+function clearAllData() {
+  if (confirm('⚠️ Xóa tất cả dữ liệu? Không thể hoàn tác!')) {
+    localStorage.clear();
+    document.getElementById('data-result').innerHTML = `<div class="success">✅ Đã xóa tất cả dữ liệu!</div>`;
+  }
+}
+
+function hashPassword(password) {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString();
+}
+
+// Auto-init on load
+window.addEventListener('DOMContentLoaded', () => {
+  console.log('Test page loaded!');
+  testAuthManager();
+});
+</script>
+
+</body>
+</html>

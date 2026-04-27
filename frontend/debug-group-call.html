@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Group Call</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .section {
+      background: #252526;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border-left: 3px solid #007acc;
+    }
+    h2 {
+      color: #4ec9b0;
+      margin-top: 0;
+    }
+    .status {
+      padding: 5px 10px;
+      border-radius: 3px;
+      display: inline-block;
+      margin: 5px 0;
+    }
+    .status.ok { background: #0e639c; color: white; }
+    .status.error { background: #f48771; color: white; }
+    .status.warn { background: #dcdcaa; color: black; }
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #1177bb;
+    }
+    #logs {
+      background: #1e1e1e;
+      padding: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 12px;
+      border: 1px solid #3c3c3c;
+    }
+    .log-entry {
+      margin: 2px 0;
+      padding: 2px 5px;
+    }
+    .log-info { color: #4ec9b0; }
+    .log-warn { color: #dcdcaa; }
+    .log-error { color: #f48771; }
+    input {
+      background: #3c3c3c;
+      border: 1px solid #555;
+      color: #d4d4d4;
+      padding: 8px;
+      border-radius: 3px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🐛 Group Call Debug Tool</h1>
+
+<div class="section">
+  <h2>1. System Check</h2>
+  <div id="system-check">Checking...</div>
+</div>
+
+<div class="section">
+  <h2>2. PeerJS Status</h2>
+  <div id="peerjs-status">Not initialized</div>
+  <button onclick="initPeer()">Initialize PeerJS</button>
+</div>
+
+<div class="section">
+  <h2>3. Camera/Mic Test</h2>
+  <div id="media-status">Not tested</div>
+  <button onclick="testMedia()">Test Camera/Mic</button>
+  <video id="test-video" autoplay muted style="width:320px;height:240px;background:#000;display:none;margin-top:10px;"></video>
+</div>
+
+<div class="section">
+  <h2>4. Room Test</h2>
+  <div>
+    <label>Room ID: </label>
+    <input type="text" id="room-id" placeholder="Enter room ID or leave empty">
+    <button onclick="createRoom()">Create Room</button>
+    <button onclick="joinRoom()">Join Room</button>
+  </div>
+  <div id="room-status" style="margin-top:10px;">No room</div>
+</div>
+
+<div class="section">
+  <h2>5. Connection Test</h2>
+  <div>
+    <label>Peer ID: </label>
+    <input type="text" id="peer-id-input" placeholder="Enter peer ID to call">
+    <button onclick="callPeer()">Call Peer</button>
+  </div>
+  <div id="connection-status" style="margin-top:10px;">No connections</div>
+</div>
+
+<div class="section">
+  <h2>6. Debug Logs</h2>
+  <button onclick="clearLogs()">Clear Logs</button>
+  <button onclick="copyLogs()">Copy Logs</button>
+  <div id="logs"></div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+let peer = null;
+let localStream = null;
+let roomId = null;
+let calls = {};
+
+// Logging
+function log(message, type = 'info') {
+  const logs = document.getElementById('logs');
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  logs.appendChild(entry);
+  logs.scrollTop = logs.scrollHeight;
+  console.log(message);
+}
+
+function clearLogs() {
+  document.getElementById('logs').innerHTML = '';
+}
+
+function copyLogs() {
+  const logs = document.getElementById('logs').innerText;
+  navigator.clipboard.writeText(logs).then(() => {
+    alert('Logs copied to clipboard!');
+  });
+}
+
+// System check
+function checkSystem() {
+  const checks = [];
+  
+  // Check PeerJS
+  if (typeof Peer !== 'undefined') {
+    checks.push('<span class="status ok">✓ PeerJS loaded</span>');
+  } else {
+    checks.push('<span class="status error">✗ PeerJS not loaded</span>');
+  }
+  
+  // Check getUserMedia
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    checks.push('<span class="status ok">✓ getUserMedia available</span>');
+  } else {
+    checks.push('<span class="status error">✗ getUserMedia not available</span>');
+  }
+  
+  // Check HTTPS
+  if (location.protocol === 'https:' || location.hostname === 'localhost') {
+    checks.push('<span class="status ok">✓ Secure context</span>');
+  } else {
+    checks.push('<span class="status warn">⚠ Not HTTPS (may cause issues)</span>');
+  }
+  
+  document.getElementById('system-check').innerHTML = checks.join('<br>');
+}
+
+// Initialize PeerJS
+function initPeer() {
+  if (peer) {
+    log('Peer already initialized', 'warn');
+    return;
+  }
+  
+  log('Initializing PeerJS...', 'info');
+  
+  peer = new Peer({
+    debug: 3,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    }
+  });
+  
+  peer.on('open', (id) => {
+    log(`✅ PeerJS connected! ID: ${id}`, 'info');
+    document.getElementById('peerjs-status').innerHTML = `
+      <span class="status ok">Connected</span><br>
+      <strong>Your Peer ID:</strong> ${id}<br>
+      <button onclick="navigator.clipboard.writeText('${id}')">Copy ID</button>
+    `;
+  });
+  
+  peer.on('call', (call) => {
+    log(`📞 Incoming call from: ${call.peer}`, 'info');
+    
+    if (!localStream) {
+      log('No local stream, cannot answer', 'error');
+      return;
+    }
+    
+    call.answer(localStream);
+    
+    call.on('stream', (remoteStream) => {
+      log(`📺 Received stream from: ${call.peer}`, 'info');
+      updateConnectionStatus();
+    });
+    
+    calls[call.peer] = call;
+  });
+  
+  peer.on('error', (err) => {
+    log(`❌ PeerJS error: ${err.type} - ${err.message}`, 'error');
+  });
+  
+  peer.on('disconnected', () => {
+    log('⚠️ PeerJS disconnected', 'warn');
+  });
+}
+
+// Test media
+async function testMedia() {
+  try {
+    log('Requesting camera/mic access...', 'info');
+    
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+    
+    log('✅ Got media stream', 'info');
+    log(`Video tracks: ${localStream.getVideoTracks().length}`, 'info');
+    log(`Audio tracks: ${localStream.getAudioTracks().length}`, 'info');
+    
+    const video = document.getElementById('test-video');
+    video.srcObject = localStream;
+    video.style.display = 'block';
+    
+    document.getElementById('media-status').innerHTML = `
+      <span class="status ok">✓ Camera/Mic working</span><br>
+      Video: ${localStream.getVideoTracks().length} tracks<br>
+      Audio: ${localStream.getAudioTracks().length} tracks
+    `;
+    
+  } catch (error) {
+    log(`❌ Media error: ${error.message}`, 'error');
+    document.getElementById('media-status').innerHTML = `
+      <span class="status error">✗ Failed: ${error.message}</span>
+    `;
+  }
+}
+
+// Create room
+function createRoom() {
+  roomId = 'room_' + Math.random().toString(36).substr(2, 9);
+  log(`Created room: ${roomId}`, 'info');
+  
+  const link = `${location.origin}${location.pathname.replace('debug-group-call.html', 'index.html')}?room=${roomId}`;
+  
+  document.getElementById('room-status').innerHTML = `
+    <span class="status ok">Room created</span><br>
+    <strong>Room ID:</strong> ${roomId}<br>
+    <strong>Link:</strong> <input type="text" value="${link}" readonly style="width:100%;margin-top:5px;"><br>
+    <button onclick="navigator.clipboard.writeText('${link}')">Copy Link</button>
+  `;
+  
+  document.getElementById('room-id').value = roomId;
+}
+
+// Join room
+function joinRoom() {
+  const input = document.getElementById('room-id').value.trim();
+  if (!input) {
+    log('Please enter room ID', 'warn');
+    return;
+  }
+  
+  roomId = input;
+  log(`Joining room: ${roomId}`, 'info');
+  
+  document.getElementById('room-status').innerHTML = `
+    <span class="status ok">Joined room</span><br>
+    <strong>Room ID:</strong> ${roomId}
+  `;
+}
+
+// Call peer
+function callPeer() {
+  const remotePeerId = document.getElementById('peer-id-input').value.trim();
+  
+  if (!remotePeerId) {
+    log('Please enter peer ID', 'warn');
+    return;
+  }
+  
+  if (!peer) {
+    log('PeerJS not initialized', 'error');
+    return;
+  }
+  
+  if (!localStream) {
+    log('No local stream. Test camera/mic first', 'error');
+    return;
+  }
+  
+  log(`Calling peer: ${remotePeerId}`, 'info');
+  
+  const call = peer.call(remotePeerId, localStream);
+  
+  call.on('stream', (remoteStream) => {
+    log(`✅ Connected to: ${remotePeerId}`, 'info');
+    calls[remotePeerId] = call;
+    updateConnectionStatus();
+  });
+  
+  call.on('error', (err) => {
+    log(`❌ Call error: ${err.type}`, 'error');
+  });
+}
+
+function updateConnectionStatus() {
+  const count = Object.keys(calls).length;
+  document.getElementById('connection-status').innerHTML = `
+    <span class="status ${count > 0 ? 'ok' : 'warn'}">${count} connection(s)</span><br>
+    ${Object.keys(calls).map(id => `Connected to: ${id}`).join('<br>')}
+  `;
+}
+
+// Initialize
+window.addEventListener('DOMContentLoaded', () => {
+  checkSystem();
+  log('Debug tool loaded', 'info');
+});
+</script>
+
+</body>
+</html>
